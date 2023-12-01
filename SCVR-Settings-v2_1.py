@@ -1,16 +1,38 @@
-import os
-import json
-import tkinter as tk
-from tkinter import *
-from PIL import Image, ImageTk
-from io import BytesIO
-import base64
-import re
-from tkinter import messagebox
+import importlib, subprocess
+def install_pip(modules):
+    cmd = ["python", "-m", "pip", "install", "--upgrade", "pip"]
+    print(f"Updating pip with {cmd}")
+    subprocess.check_call(cmd)
+    for module_name in modules:
+        try: module = importlib.import_module(module_name)
+        except ModuleNotFoundError:
+            cmd = ["python", "-m", "pip", "install", module_name]
+            print(f"Module {module_name} not found. Installing with {cmd}")
+            subprocess.check_call(cmd)
+    exit(1)
+try:
+    import os, ctypes, json, base64, re, sys, pyuac
+    import tkinter as tk
+    from tkinter import *
+    from PIL import Image, ImageTk
+    from io import BytesIO
+    from tkinter import messagebox
+except ImportError as err:
+    install_pip(["pyuac","pypiwin32","altgraph==0.17.4","auto-py-to-exe==2.42.0","bottle==0.12.25","bottle-websocket==0.2.9","cachetools==5.3.2","certifi==2023.7.22","cffi==1.16.0","charset-normalizer==3.3.2","Eel==0.16.0","future==0.18.3","gevent==23.9.1","gevent-websocket==0.10.1","google-auth==2.23.4","google-auth-oauthlib==1.1.0","greenlet==3.0.1","gspread==5.12.0","httplib2==0.22.0","idna==3.4","oauth2client==4.1.3","oauthlib==3.2.2","packaging==23.2","pefile==2023.2.7","Pillow==10.1.0","pyasn1==0.5.0","pyasn1-modules==0.3.0","pycparser==2.21","pyinstaller==6.2.0","pyinstaller-hooks-contrib==2023.10","pyparsing==3.1.1","pywin32-ctypes==0.2.2","requests==2.31.0","requests-oauthlib==1.3.1","rsa==4.9","setuptools==68.2.2","six==1.16.0","urllib3==2.1.0","whichcraft==0.6.1","zope.event==5.0","zope.interface==6.1"])
+
+# region admin_check
+def ask_restart_as_admin():
+   root = tk.Tk()
+   root.withdraw() # Hide the main window
+   answer = messagebox.askyesno(title='Confirmation',
+                    message='Do you want to restart the script as an admin?')
+   return answer
+# endregion admin_check
 
 def is_hosts_updated():
     try:
         hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
+        print(f"Hosts file Expected at {hosts_path}")
         hosts_content = "\n#Star Citizen EAC workaround\n127.0.0.1        modules-cdn.eac-prod.on.epicgames.com"
 
         with open(hosts_path, 'r') as hosts_file:
@@ -29,6 +51,7 @@ def is_hosts_updated():
 def update_settings(directory, new_values):
     try:
         file_path = os.path.join(directory, 'settings.json')
+        print(f"Settings file Expected at {file_path}")
 
         # Check if the directory exists
         if not os.path.exists(directory):
@@ -62,6 +85,7 @@ def update_settings(directory, new_values):
 
 def update_attributes(directory, width, height, fov):
     file_path = os.path.join(directory, 'attributes.xml')
+    print(f"Attributes file Expected at {file_path}")
 
     try:
         # Check if the directory exists
@@ -91,6 +115,7 @@ def update_attributes(directory, width, height, fov):
 
 def update_data():
     drive_letter = drive_var.get()
+    print(f"Drive Letter {drive_letter}")
 
     # Get the selected headset, resolution, width, and height
     selected_headset = headset_var.get()
@@ -108,9 +133,13 @@ def update_data():
 
     # Update settings in specified directories
     ptu_directory = os.path.join(drive_letter, 'Program Files', 'Roberts Space Industries', 'StarCitizen', 'PTU', 'EasyAntiCheat')
+    print(f"EasyAntiCheat ptu_directory expected at {ptu_directory}")
     live_directory = os.path.join(drive_letter, 'Program Files', 'Roberts Space Industries', 'StarCitizen', 'LIVE', 'EasyAntiCheat')
+    print(f"EasyAntiCheat live_directory expected at {live_directory}")
     eptu_directory = os.path.join(drive_letter, 'Program Files', 'Roberts Space Industries', 'StarCitizen', 'EPTU', 'EasyAntiCheat')
+    print(f"EasyAntiCheat eptu_directory expected at {eptu_directory}")
     tech_preview = os.path.join(drive_letter, 'Program Files', 'Roberts Space Industries', 'StarCitizen', 'TECH-PREVIEW', 'EasyAntiCheat')
+    print(f"EasyAntiCheat tech_preview expected at {tech_preview}")
 
     new_values = {
         "productid": "vorpx-eac-workaround",
@@ -132,9 +161,13 @@ def update_data():
     # Update attributes.xml
     selected_drive = drive_var.get()
     ptu_attributes_directory = os.path.join(selected_drive, 'Program Files', 'Roberts Space Industries', 'StarCitizen', 'PTU', 'USER', 'Client', '0', 'Profiles', 'default')
+    print(f"ptu_attributes_directory expected at {ptu_directory}")
     live_attributes_directory = os.path.join(selected_drive, 'Program Files', 'Roberts Space Industries', 'StarCitizen', 'LIVE', 'USER', 'Client', '0', 'Profiles', 'default')
+    print(f"live_attributes_directory expected at {live_attributes_directory}")
     eptu_attributes_directory = os.path.join(selected_drive, 'Program Files', 'Roberts Space Industries', 'StarCitizen', 'EPTU', 'USER', 'Client', '0', 'Profiles', 'default')
+    print(f"eptu_attributes_directory expected at {eptu_attributes_directory}")
     tech_preview_attributes_directory = os.path.join(selected_drive, 'Program Files', 'Roberts Space Industries', 'StarCitizen', 'TECH-PREVIEW', 'USER', 'Client', '0', 'Profiles', 'default')
+    print(f"tech_preview_attributes_directory expected at {tech_preview_attributes_directory}")
 
     # Fetch FOV and clamp it to a maximum of 120
     fov_value = min(fov_var.get(), 120)
@@ -163,7 +196,7 @@ def update_data():
         updated = True
     elif hosts_updated is False:
         result_message += "\nHosts file is already up to date."
-
+    print(result_message)
     messagebox.showinfo("Update Result", result_message)
 
     if updated:
@@ -171,6 +204,12 @@ def update_data():
         close_button = tk.Button(root, text="Close Program", command=root.destroy, font=("Arial", 12))
         close_button.pack(pady=10)
 
+
+if not pyuac.isUserAdmin():
+    if ask_restart_as_admin():
+        print("Re-launching as admin!")
+        pyuac.runAsAdmin()
+        exit(0)
 
 # GUI setup
 root = tk.Tk()
